@@ -1,11 +1,5 @@
-from address import Address
-
 
 class Mailing:
-    to_address = Address
-    from_address = Address
-    cost = "1500"
-    track = "1234567890"
 
     def __init__(self, to_address, from_address, cost, track):
         self.to_address = to_address

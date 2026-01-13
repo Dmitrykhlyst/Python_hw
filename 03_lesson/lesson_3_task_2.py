@@ -8,5 +8,5 @@ phone5 = Smartphone("Samsung", "Galaxy A56", "+79620555552")
 
 catalog = [phone1, phone2, phone3, phone4, phone5]
 
-for phones in catalog:
-    print(f"{phone5.brand} - {phone5.model}. {phone5.number}")
+for phone in catalog:
+    print(f"{phone.brand} - {phone.model}. {phone.number}")
