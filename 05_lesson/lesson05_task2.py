@@ -7,6 +7,6 @@ from selenium.webdriver.common.by import By
 driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
 driver.maximize_window()
 driver.get("http://uitestingplayground.com/dynamicid")
-search_input = driver.find_element(By.XPATH, '/html/body/section/div/button')
+search_input = driver.find_element(By.CSS_SELECTOR, '/html/body/section/div/button')
 search_input.click()
 sleep(3)
