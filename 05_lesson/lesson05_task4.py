@@ -1,20 +1,24 @@
-from time import sleep
 from selenium import webdriver
-from selenium.webdriver.firefox.service import Service as FirefoxService
-from webdriver_manager.firefox import GeckoDriverManager
 from selenium.webdriver.common.by import By
+import time
 
-driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()))
-driver.maximize_window()
+
+driver = webdriver.Firefox()
+
 driver.get("http://the-internet.herokuapp.com/login")
-search_field = "#username"
-search_input_username = driver.find_element(By.CSS_SELECTOR, '//*[@id="username"]')
-search_input_username.send_keys("tomsmith")
-search_input_password = driver.find_element(By.CSS_SELECTOR, '//*[@id="password"]')
-search_input_password.send_keys("SuperSecretPassword!")
-search_input = driver.find_element(By.CSS_SELECTOR, '//*[@id="login"]/button')
-search_input.click()
-sleep(3)
-text= EC.visibility_of_element_located(By.CSS_SELECTOR, ".flash.flash-success")
-print(text)
+
+username_field = driver.find_element(By.ID, "username")
+password_field = driver.find_element(By.ID, "password")
+
+username_field.send_keys("tomsmith")
+password_field.send_keys("SuperSecretPassword!")
+
+login_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
+login_button.click()
+
+message = driver.find_element(By.ID, "flash").text
+print(message)
+
+time.sleep(2)
+
 driver.quit()

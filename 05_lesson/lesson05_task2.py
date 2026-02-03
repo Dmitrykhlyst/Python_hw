@@ -1,12 +1,15 @@
-from time import sleep
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service as ChromeService
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
+import time
 
-driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
-driver.maximize_window()
+
+driver = webdriver.Chrome()
+
 driver.get("http://uitestingplayground.com/dynamicid")
-search_input = driver.find_element(By.CSS_SELECTOR, '/html/body/section/div/button')
-search_input.click()
-sleep(3)
+
+button = driver.find_element(By.CSS_SELECTOR, ".btn-primary")
+button.click()
+
+time.sleep(2)
+
+driver.quit()
