@@ -1,50 +1,102 @@
-import pytest
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service as ChromeService
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 
-driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
-waiter = WebDriverWait(driver,5)
-
-driver.get("https://www.saucedemo.com/")
-login = driver.find_element(By.CSS_SELECTOR, "#user-name").send_keys("standard_user")
-password = driver.find_element(By.CSS_SELECTOR, "#password").send_keys("secret_sauce")
-driver.find_element(By.CSS_SELECTOR, "#login-button").click()
-waiter.until(
-    EC.text_to_be_present_in_element((By.CSS_SELECTOR, 'div[class="app_logo"]'), "Swag Labs")
-)
-
-driver.find_element(By.CSS_SELECTOR, "#add-to-cart-sauce-labs-backpack").click()
-driver.find_element(By.CSS_SELECTOR, "#add-to-cart-sauce-labs-bolt-t-shirt").click()
-driver.find_element(By.CSS_SELECTOR, "#add-to-cart-sauce-labs-onesie").click()
-
-driver.find_element(By.CSS_SELECTOR, "#shopping_cart_container").click()
-driver.find_element(By.CSS_SELECTOR, "#checkout").click()
-waiter.until(
-    EC.text_to_be_present_in_element((By.CSS_SELECTOR, 'div[class="app_logo"]'), "Swag Labs")
-)
-first_n = driver.find_element(By.CSS_SELECTOR, "#first-name").send_keys("Anastasia")
-last_n = driver.find_element(By.CSS_SELECTOR, "#last-name").send_keys("Kuzko")
-zipcode = driver.find_element(By.CSS_SELECTOR, "#postal-code").send_keys("236040")
-driver.find_element(By.CSS_SELECTOR, "#continue").click()
-waiter.until(
-    EC.text_to_be_present_in_element((By.XPATH, '//*[@id="header_container"]/div[2]/span'), "Checkout: Overview")
-)
+URL = "https://www.saucedemo.com/"
 
 
-@pytest.mark.test_shop
-@pytest.mark.parametrize('res_in, res_es', [
-        (driver.find_element(By.XPATH, '//*[@id="checkout_summary_container"]/div/div[2]/div[8]').get_attribute("textContent"), 'Total: $58.29')
-        ])
-def test_price (res_in, res_es):
-    assert res_in == res_es
-    if res_in == res_es:
-        print("success")
-    else:
-        print("false")
+def create_driver() -> webdriver.Firefox:
+    options = Options()
 
-driver.quit()
+    # Не ждём "полную загрузку" — Firefox часто зависает на get()
+    options.page_load_strategy = "none"
+
+    # Убираем прокси/велком-страницы, которые мешают старту
+    options.set_preference("network.proxy.type", 0)
+    options.set_preference("browser.aboutwelcome.enabled", False)
+    options.set_preference("browser.newtabpage.enabled", False)
+
+    driver = webdriver.Firefox(options=options)
+    driver.set_page_load_timeout(10)
+    return driver
+
+
+def open_url_stable(driver: webdriver.Firefox, wait: WebDriverWait, url: str) -> None:
+    driver.get("about:blank")
+
+    try:
+        driver.get(url)
+    except Exception:
+        pass
+
+    driver.execute_script("window.location.href = arguments[0];", url)
+
+    # Ждём не URL, а реальный "якорь" страницы — поле логина
+    wait.until(EC.presence_of_element_located((By.ID, "user-name")))
+
+
+def test_shop_purchase_total():
+    driver = None
+
+    # Ретраи с пересозданием драйвера (иначе InvalidSessionId/NoSuchWindow)
+    for attempt in range(2):
+        try:
+            driver = create_driver()
+            wait = WebDriverWait(driver, 40)
+
+            open_url_stable(driver, wait, URL)
+
+            wait.until(EC.element_to_be_clickable((By.ID, "user-name"))).send_keys(
+                "standard_user"
+            )
+            driver.find_element(By.ID, "password").send_keys("secret_sauce")
+            driver.find_element(By.ID, "login-button").click()
+
+            wait.until(
+                EC.presence_of_element_located((By.CLASS_NAME, "inventory_list"))
+            )
+
+            driver.find_element(By.ID, "add-to-cart-sauce-labs-backpack").click()
+            driver.find_element(By.ID, "add-to-cart-sauce-labs-bolt-t-shirt").click()
+            driver.find_element(By.ID, "add-to-cart-sauce-labs-onesie").click()
+
+            driver.find_element(By.CLASS_NAME, "shopping_cart_link").click()
+            wait.until(
+                EC.presence_of_element_located((By.ID, "cart_contents_container"))
+            )
+
+            driver.find_element(By.ID, "checkout").click()
+            wait.until(
+                EC.presence_of_element_located((By.ID, "checkout_info_container"))
+            )
+
+            driver.find_element(By.ID, "first-name").send_keys("Иван")
+            driver.find_element(By.ID, "last-name").send_keys("Петров")
+            driver.find_element(By.ID, "postal-code").send_keys("123456")
+
+            driver.find_element(By.ID, "continue").click()
+            wait.until(
+                EC.presence_of_element_located((By.ID, "checkout_summary_container"))
+            )
+
+            total_text = driver.find_element(By.CLASS_NAME, "summary_total_label").text
+            total_value = total_text.split("$")[-1].strip()
+
+            assert total_value == "58.29", (
+                f"Ожидали 58.29, получили {total_value} ({total_text})"
+            )
+            return
+
+        except Exception:
+            if attempt == 1:
+                raise
+        finally:
+            if driver is not None:
+                try:
+                    driver.quit()
+                except Exception:
+                    pass
+                driver = None
