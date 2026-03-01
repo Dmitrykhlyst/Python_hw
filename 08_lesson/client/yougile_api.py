@@ -81,9 +81,12 @@ class YougileAPI:
         return self._request("POST", "/api-v2/projects", json=payload)
 
     def update_project(self, project_id: str, title: str) -> requests.Response:
+        url = f"{self.base_url}/projects/{project_id}"
+        data = {"title": title}
         return self._request(
             "PUT",
-
+            url,
+            json=data
         )
 
     def get_project(self, project_id: str) -> requests.Response:
