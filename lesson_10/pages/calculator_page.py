@@ -11,9 +11,15 @@ class CalculatorPage:
         self.screen = (By.CLASS_NAME, "screen")
 
     def open(self):
+        """Открывает главную страницу"""
         self.driver.get(self.URL)
 
     def set_delay(self, seconds: str):
+        """
+
+        :param seconds: Время задержки
+        :return:
+        """
         field = self.driver.find_element(*self.delay_input)
         field.clear()
         field.send_keys(seconds)
